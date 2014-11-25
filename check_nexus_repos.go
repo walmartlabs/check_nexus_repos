@@ -131,7 +131,7 @@ func main() {
 
 	status := "OK"
 	rv := 0
-	name := "JenkinsQueue"
+	name := "NexusRepos"
 
 	// c := make(chan int)
 
