@@ -10,6 +10,9 @@ if something is wrong with the network.
       -h="http://gec-maven-nexus.walmart.com/nexus/service/local": base url for nexus
       -v=false: verbose output
 
+It calls the Nexus API, gets the list of repos, and call the API
+again for each repo, checking the state of each.
+
 Build it:
 ---------
 
