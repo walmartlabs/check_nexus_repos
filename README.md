@@ -1,11 +1,14 @@
 Nagios check for the Nexus Repos in Go.
 =========================================
 
+Checks how many repos are in the BLOCKED_AUTO state. This can happen
+if something is wrong with the network.
+
     Usage of ./check_nexus_repos:
-      -c=20: critical level for job queue depth
-      -h="http://ci.walmartlabs.com/nexus/service/local": base url for jenkins  like http://ci.walmartlabs.com/nexus/service/local
+      -w=10: warning level for number of blocked repos
+      -c=20: critical level for number of blocked repos
+      -h="http://gec-maven-nexus.walmart.com/nexus/service/local": base url for nexus
       -v=false: verbose output
-      -w=10: warning level for job queue depth
 
 Build it:
 ---------
