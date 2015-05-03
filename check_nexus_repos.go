@@ -6,9 +6,10 @@ import "io/ioutil"
 import "encoding/json"
 import "flag"
 import "os"
+import "strings"
 
 type HandledJson interface {
-	Handler(url string, verbose bool) int
+	Handler(url string, verbose bool) (int, []string)
 }
 
 type Repositories struct {
@@ -22,7 +23,7 @@ type Repository struct {
 	RepoType string
 }
 
-func (list Repositories) Handler(url string, verbose bool) (items int) {
+func (list Repositories) Handler(url string, verbose bool) (items int, bad_hosts []string) {
 
 	for i, repo := range list.Data {
 		// items += 1
@@ -34,11 +35,12 @@ func (list Repositories) Handler(url string, verbose bool) (items int) {
 
 		// an error here means nexus is down or servien bad json
 		//so raise an unknown
-		rv, _ := get_content(url+"/"+repo.Id+"/status", new(RepositoryState), verbose)
+		rv, _bad_hosts, _ := get_content(url+"/"+repo.Id+"/status", new(RepositoryState), verbose)
 		// if err != nil {
 		//     continue
 		// }
 
+		bad_hosts = append(bad_hosts, _bad_hosts...)
 		items += rv
 
 	}
@@ -60,7 +62,7 @@ type _RepositoryState struct {
 	RemoteStatus string
 }
 
-func (state RepositoryState) Handler(url string, verbose bool) (items int) {
+func (state RepositoryState) Handler(url string, verbose bool) (items int, bad_hosts []string) {
 
 	s := state.Data
 	if verbose {
@@ -71,14 +73,16 @@ func (state RepositoryState) Handler(url string, verbose bool) (items int) {
 
 	//repo:ProxyMode:BLOCKED_AUTO:Id:NPM:RemoteStatus:UNAVAILABLE:LocalStatus:IN_SERVICE:RepoType:proxy:Format:maven2:
 	if s.ProxyMode == "BLOCKED_AUTO" {
-		return 1
+		bad_hosts = append(bad_hosts, s.Id)
+		items = 1
+	} else {
+		items = 0
 	}
 
-	return 0
-
+	return
 }
 
-func get_content(url string, data HandledJson, verbose bool) (items int, err error) {
+func get_content(url string, data HandledJson, verbose bool) (items int, bad_hosts []string, err error ) {
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -122,7 +126,7 @@ func get_content(url string, data HandledJson, verbose bool) (items int, err err
 		return
 	}
 
-	items = data.Handler(url, verbose)
+	items, bad_hosts = data.Handler(url, verbose)
 
 	return
 }
@@ -164,7 +168,7 @@ func main() {
 
 	}
 
-	jobs, err := get_content(url, new(Repositories), *verbose)
+	jobs, bad_hosts, err := get_content(url, new(Repositories), *verbose)
 	if err != nil {
 
 		fmt.Printf("%s Unknown: %T %s %#v\n", name, err, err, err)
@@ -181,7 +185,7 @@ func main() {
 		rv = 2
 	}
 
-	fmt.Printf("%s %s: %d\n", name, status, jobs)
+	fmt.Printf("%s %s: %d | %s\n", name, status, jobs, strings.Join(bad_hosts, ","))
 	os.Exit(rv)
 
 }
